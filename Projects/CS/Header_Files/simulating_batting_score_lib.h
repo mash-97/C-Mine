@@ -34,8 +34,26 @@ void print_match_header(Match *match)
 	printf("================================================================================\n");
 }
 
+void display_not_out_players(Player * players)
+{
+	Player * current_player = players;
+	while(current_player != NULL)
+	{
+		if(current_player->out_or_not == NOT_OUT)
+		{	newl; s4; 
+			printf("%s\n", current_player->name);
+		}
+		current_player = current_player->next;
+	}
+	newl;
+}
+		
+
 void print_score_board(Match * match, Team * team)
 {
+	team->players = insertion_sort_by_match_runs(team->players);
+	team->players = reverse_player_list(team->players);
+	
 	printf("%s ::", team->name);
 	printf("%d/%d\n", team->total_runs, team->total_wickets);
 	if(team->played_overs != 0) printf("Current Run Rate: %0.2lf\n", (double) (team->total_runs*1.0)/team->played_overs);
@@ -79,6 +97,7 @@ void print_score_board(Match * match, Team * team)
 	printf("Extras: %4d\n", team->extras);
 	printf("Total : %4d\n", team->total_runs);
 	newl;
+	print_divider_label(80);
 }
 	
 void print_batting_header_label(Match * match, Team * team)
@@ -131,7 +150,7 @@ Player * get_new_batsman(Player *root_players, char *printo)
 		namify(player_name);
 		if(!strcmp(player_name, "Show Players")) 
 		{
-			display_players(root_players);
+			display_not_out_players(root_players);
 			goto get_batsman;
 		}
 		if(!check_name(player_name)) goto get_batsman;
@@ -143,21 +162,17 @@ Player * get_new_batsman(Player *root_players, char *printo)
 			goto get_batsman;
 		}
 		if(batsman->out_or_not == OUT || batsman->status == BATTING) goto get_batsman;
-		batsman->match_runs = 0;
-		batsman->out_or_not = NOT_OUT;
+		
 		batsman->status = BATTING;
 	return batsman;
 }
-
+	
+	
 Team * simulate_batting_for_team(Match * match, Team * team)
 {
 	int max_name_length = max_name_length_of_players(team->players);
-	// Initializing...
-	team->played_overs  = 0;
-	team->total_runs    = 0;
-	team->total_wickets = 0;
-	team->extras        = 0;
-	//////////////////////////
+	initialize_team(team);
+	
 	clrscr();
 	print_match_header(match);
 	print_batting_header_label(match, team);
@@ -217,7 +232,7 @@ Team * simulate_batting_for_team(Match * match, Team * team)
 		
 		instruction = instructify(stringus);
 		
-		if(balls == 7 && instruction != OVER)
+		if(balls == 6 && instruction != OVER)
 		{
 			balls = 0;
 			team->played_overs++;
@@ -295,6 +310,7 @@ Team * simulate_batting_for_team(Match * match, Team * team)
 				team->total_wickets++;
 				if(team->total_wickets==match->NOPIET-1)
 				{
+				newl;s4;
 					printf("!!!   -*- All wickets gone -*-  !!!\n");
 					getchar();
 					
@@ -304,6 +320,7 @@ Team * simulate_batting_for_team(Match * match, Team * team)
 					getchar();
 					return team;
 				}
+				newl;s4;
 				striker = get_new_batsman(team->players, "New Batsman Name: ");
 				striker->status = BATTING;
 				striker->out_or_not = NOT_OUT;
@@ -320,14 +337,15 @@ Team * simulate_batting_for_team(Match * match, Team * team)
 			case DECLARED:
 				clrscr();
 				print_score_board(match, team);
-
-				commando = getCommand("Are you sure you want to declare? (Y:N) -> (1:0)\n:");
+				
+				newl; s4; commando = getCommand("Are you sure you want to declare? (Y:N) -> (1:0)\n:");
 				if(commando == '1')
 				{
 					clrscr();
 					print_batting_header_label(match, team);
-					printf("*** DECLARED ***\n");
+					newl; s4; s4; print_spaces(17); printf("*** DECLARED ***\n\n");
 					print_score_board(match, team);
+					pause();
 					return team;
 				}
 				goto get_instruction;
@@ -373,36 +391,39 @@ Team * simulate_batting_for_team(Match * match, Team * team)
 
 Match * simulate_the_match(Match *match)
 {
+	if(match == NULL) return NULL;
 	clrscr();
-	
 	print_match_header(match);
 	match->status = INITIALIZING;
 	char commando;
 	printf("Who will bat first?    ( %s : 'A'  ::  %s : 'B' )\n\n", match->team_A->name, match->team_B->name);
 	get_toss_command:
 		commando = getCommand(":");
-		if(!(commando == 'A' || commando == 'B')) goto get_toss_command;
+		if(!(commando == 'A' || commando == 'B' || commando == 'a' || commando == 'b')) goto get_toss_command;
 
-	char decommando;
+	int decommando;
 	get_decommando:
-	newl;
-	newl;
-	decommando = getCommand("Start the match? (Y:N) -> (1:0)\n:");
-	if(decommando == '0') return NULL;
-	if(decommando != '1') goto get_decommando;
+	
+	newl;newl;s4; print_spaces(20);
+	if(commando == 'A' || commando == 'a') printf("( %s will bat first )\n", match->team_A->name);
+	else printf("( %s will bat first )\n", match->team_B->name);
+	
+	newl;s4; decommando = getiCommand("Start the match? (Y:N) -> (1:0)\n:");
+	if(decommando == 0) return NULL;
+	if(decommando != 1) goto get_decommando;
 	// Setting up starting time.
 	createCurrentDTsStringIntoArray(match->starting_time);
 	// Initialization.....
 	match->status  = RUNNING;
 	match->innings = FIRST_INNINGS;
-	if(commando == 'A')
+	if(commando == 'A' || commando == 'a')
 	{
 			match->bat_first = TEAM_A;
 			match->team_A = simulate_batting_for_team(match, match->team_A);
 			match->team_B->status = BATTING;
 			match->team_A->status = BOWLING;
 	}
-	else if(commando == 'B')
+	else if(commando == 'B' || commando =='b')
 	{
 			match->bat_first = TEAM_B;
 			match->team_B = simulate_batting_for_team(match, match->team_B);
@@ -411,7 +432,10 @@ Match * simulate_the_match(Match *match)
 	}
 
 	clrscr();
-	printf("Start Last Innings...\n");
+	newl;newl;s4; print_spaces(20);
+	if(commando == 'A' || commando == 'a') printf("%s will bat now:\n", match->team_B->name);
+	else printf("%s will bat now:\n", match->team_A->name);
+	newl; s4; print_spaces(24); printf("Start Last Innings...\n");
 	getchar();
 	getchar();
 	match->innings = LAST_INNINGS;
@@ -469,6 +493,11 @@ Match * simulate_the_match(Match *match)
 			match->man_of_the_match = match->team_B->man_of_the_team;
 		else match->man_of_the_match = NULL;
 	}
+	
+	// Updating all the teams informations....
+	match->team_A = update_team_according_to_the_match(match->team_A);
+	match->team_B = update_team_according_to_the_match(match->team_B);
+	//////////////////////////////////////////////////////////////////
 	createCurrentDTsStringIntoArray(match->ending_time);
 	return match;
 }

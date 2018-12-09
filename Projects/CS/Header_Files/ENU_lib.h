@@ -5,9 +5,11 @@ int get_enu(char *enu_file_path)
 	FILE *file = fopen(enu_file_path, "r");
 	if(file == NULL)
 	{
-		fprintf(file, "Failed to open the file :%s in read mode! (inside: get_enu())\n", enu_file_path);
+		fprintf(stderr, "Failed to open the file :%s in read mode! (inside: get_enu())\n", enu_file_path);
+		perror("ERROR in ENU_lib.h: ");
 		exit(1);
 	}
+	
 	int enu;
 	fscanf(file, "%d", &enu);
 	fclose(file);

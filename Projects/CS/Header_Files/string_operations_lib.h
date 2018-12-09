@@ -2,6 +2,11 @@
 
 #define NAME_CHECK_LENGTH 5
 
+char * generate_string_space(int nmemb)
+{
+	char * s = (char *) calloc(nmemb, sizeof(char));
+	return s;
+}
 
 int betweenAlphabets(char c)
 {

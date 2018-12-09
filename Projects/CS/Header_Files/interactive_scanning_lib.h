@@ -1,5 +1,7 @@
 #define INTERACTIVE_SCANNING_LIB_FILE_NAME "interactive_scanning_lib.h"
 
+#define pause() {getchar(); getchar();}
+
 int get_char(char *string)
 {
 	printf("%s: ", string);

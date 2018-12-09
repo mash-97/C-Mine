@@ -7,7 +7,6 @@
 #define TEAM_ENU_FILE_NAME   	"teams.enu"
 #define TEAM_NAMES_FILE_NAME 	"teams.nm"
 
-
 #define SUCCESS_TO_BURN_A_TEAMINFO 455
 #define QUIT						-1
 #define REGISTRATION_NOT_CONFIRMED   2
@@ -67,11 +66,25 @@ int checkExistenceOfTheTeam(char *name)
 	int team_enu = get_enu(TEAM_ENU_PATH);	//.......................
 
 	FILE *f = fopen(TEAM_NAMES_PATH, "r");		//.......................
+	if(f == NULL)
+	{
+		fstderr(TEAM_NAMES_PATH, "r", TEAM_STRUCTURE_LIB_FILE_NAME,  "checkExistenceOfTheTeam", "1");
+		perror("ERROR: ");
+		exit(1);
+	}
+	
 	for(int i=1; i<=team_enu; i++)
 	{
-		fscanf(f, " %[^\n]", tname);
-		if(!strcmp(tname, name)) return 1;
+		if(fscanf(f, " %[^\n]", tname) == EOF) break;
+		
+		if(!strcmp(tname, name))
+		{
+			fclose(f);
+			return 1;
+		}
 	}
+	
+	fclose(f);
 	return 0;
 }
 
@@ -149,6 +162,7 @@ int checkIfThePasswordMatch(char *name, char *team_encoded_password)
 		integerNumberIntoString(i, number_string);
 		
 		make_as_path(team_info_file_path, TEAMS_PATH, number_string);
+		if(!isExist(team_info_file_path)) continue;
 		join_as_path(team_info_file_path, TEAM_INFO_FILE_NAME);
 		
 		FILE *team_inf_file = fopen(team_info_file_path, "r");
@@ -274,24 +288,62 @@ int count_total_players(Player *players)
 void get_a_password(char *password)
 {
 	get_password:
+		newl;s4;
+		
 		printf("Enter a password::(4 length): ");
 		scanf(" %s", password);
 		if(strlen(password) != 4) goto get_password;
 }
 
+Team * update_team_infos_according_to_a_match_status(Team * team)
+{
+	if(team==NULL) return NULL;
+	
+	team->total_matches++;
+	
+	if(team->status == WON)  team->total_wins++;
+	if(team->status == DRAW) team->total_draws++;
+	if(team->status == LOST) team->total_losts++;
+	
+	char *file_path = (char *) calloc(
+										strlen(TEAMS_PATH) + 
+										strlen(team->teams_folder_string) + 
+										strlen(TEAM_INFO_FILE_NAME) + 5, sizeof(char));
+										
+	make_as_path(file_path, TEAMS_PATH, team->teams_folder_string);
+	join_as_path(file_path, TEAM_INFO_FILE_NAME);
+	
+	burn_a_team_infos_into_the_file(team, file_path);
+	
+	return team;
+}
+
+
+Team * update_team_according_to_the_match(Team *team)
+{
+	update_team_infos_according_to_a_match_status(team);
+	
+	char * player_folder_path = generate_string_space(
+									strlen(TEAMS_PATH)+strlen(team->teams_folder_string)+
+										strlen(PLAYERS_FOLDER_NAME)+
+											5
+								);
+	make_as_path(player_folder_path, TEAMS_PATH, team->teams_folder_string);
+	join_as_path(player_folder_path, PLAYERS_FOLDER_NAME);
+	
+	team->players = update_players_infos(team->players, player_folder_path);
+	free(player_folder_path);
+	
+	return team;
+}
+	
+	
+
 // Registration of a team.
 int register_a_team()
 {
-	int getCommand()
-	{
-		printf(":: ");
-		getchar();
-		return getchar();
-	}
 	clrscr();
-	printf("================================================================================\n");
-	printf("===========================  Team Registration  ================================\n");
-	printf("================================================================================\n");
+	print_team_registration_label();
 	
 	char command;
 	char name[51];
@@ -303,60 +355,71 @@ int register_a_team()
 	Player * new_player = NULL;
 	
 	get_name:
+		newl;s4;
+		
 		printf("Team Name: ");
 		scanf(" %[^\n]", name);
 		namify(name);
 		if(checkExistenceOfTheTeam(name)) 
 		{
+			newl;
+			s4;
 			printf("A team named %s already exists !\n", name);
 			goto get_name;
 		}
 		if(!check_name(name))	goto get_name;
 	
 	get_total_players:
+		newl;s4;
+		
 		printf("Total Players: ");
 		scanf("%d", &total_players);
 		if(total_players < 0 || total_players > 20) goto get_total_players;
 	
 	get_players_names:
-		newl;
-		printf("Players Names: \n");
+		newl;newl;s4;
+		
+		printf("Players Names: \n\n");
 		for(int i=1; i<=total_players; i++)
 		{
+			s4;s4;
+			
 			get_the_player_name:
-			printf("%d. ", i);
-			scanf(" %[^\n]", player_name);
-			namify(player_name);
-			if(!check_name(player_name)) goto get_the_player_name;
+				printf("%d. ", i);
+				scanf(" %[^\n]", player_name);
+				namify(player_name);
+				if(!check_name(player_name)) goto get_the_player_name;
+				
 			new_player = create_player(player_name, 0, 0, 0, NULL);
 			players = prepend_player(players, new_player);
+			newl;
 		}
 		
 		get_names_confirmation_command:
-		newl;
-		printf("Do you want to keep these players names? (Y:N) --> (1:0)\n");
-		command = getCommand();
-		if(command == '0') goto get_players_names;
-		else if(command != '1') goto get_names_confirmation_command;
+			newl; newl; s4;
+			
+			command = getCommand("Do you want to keep these players names? (Y:N) --> (1:0)\n    ::");
+			if(command == '0') goto get_players_names;
+			else if(command != '1') goto get_names_confirmation_command;
 		
 	get_passwords:
-		newl;
-		get_a_password(password);
-		newl;
+		get_a_password(password);	
+		newl;s4;
+		
 		printf("Give the above password again:\n");
 		get_a_password(_password_);
 		
 		if(strcmp(_password_, password))
 		{
-			printf("Didn't match, try again.\n");
+			newl;s4;
+			printf("Didn't match, try again.\n"); newl;
 			goto get_passwords;
 		}
 		encode_by_3_left(_password_);
+		
 	confirmation:
-		newl;
-		newl;
-		printf("Do you confirm? (Y:N) --> (1:0)\n");
-		command = getCommand();
+		newl; newl; s4;
+		command = getCommand("Do you confirm? (Y:N) --> (1:0)\n    ");
 		if(command == '0') return REGISTRATION_NOT_CONFIRMED;
 		else if(command != '1') goto confirmation;
 		else

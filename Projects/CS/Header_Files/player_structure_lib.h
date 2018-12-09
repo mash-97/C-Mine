@@ -14,12 +14,14 @@ struct Player
 	int total_played_match;
 	int total_runs;
 	double average_runs;
-
+	
 	// Match related
 	int match_runs;
 	int status;
 	char out_or_not;						// In the current match out or not.
-
+	
+	// Folder no string...
+	char folder_nos[20];
 	Player *next;
 };
 
@@ -119,7 +121,48 @@ void burn_all_the_players_in_range(Player *players, int left, int right, char *p
 	}
 }
 
+Player * update_player_info_according_to_the_match(Player *player, char *player_info_path)
+{
+	if(player == NULL) return NULL;
+	
+	player->total_runs += player->match_runs;
+	player->total_played_match++;
+	player->average_runs = ((player->total_runs)*1.0)/(player->total_played_match);
+	
+	burn_a_player_infos_into_the_file(player, player_info_path);
+	
+	return player;
+}
 
+
+Player * update_players_infos(Player * players, char *player_folder_path)
+{	
+	char * file_path;
+	Player * current_player = players;
+	
+	while(current_player != NULL)
+	{
+		printf("# current_player->folder_nos: %s\n", current_player->folder_nos);
+		file_path = generate_string_space(
+						strlen(player_folder_path)+
+							strlen(current_player->folder_nos)+
+								5
+					);
+		
+		make_as_path(
+			file_path, player_folder_path,
+				current_player->folder_nos
+		);
+		
+		printf("## going to update %s's information in path: %s\n\n", current_player->name, file_path);
+		update_player_info_according_to_the_match(
+				current_player, file_path);
+		free(file_path);
+		current_player = current_player->next;
+	}
+	return players;
+}
+	
 Player * swap_players(Player *root, Player *p1, Player *p2)
 {
 	if(root == NULL ||  root->next == NULL) return root;
@@ -217,14 +260,14 @@ Player * swap_players(Player *root, Player *p1, Player *p2)
 void display_players(Player *root)
 {
 	//clrscr();
+	
 	Player *current_player = root;
+	int count = 1;
 	while(current_player != NULL)
 	{
-		//printf("%d:\n", current_player->_NO_);
-		printf("Name: %s\n", current_player->name);
-		printf("average: %.2lf\n", current_player->average_runs);
-		
-		puts("");
+		newl;s4;s4;printf("%d:\n", count++);
+		newl;s4;s4;printf("Name: %s\n", current_player->name);
+		//printf("average: %.2lf\n", current_player->average_runs);
 		current_player = current_player->next;
 	}
 	newl;
@@ -252,6 +295,27 @@ Player * insertion_sort_by_av(Player *root)
 	return root;
 }
 
+Player * insertion_sort_by_match_runs(Player *root)
+{
+	Player *current = root->next;
+	Player *next = current->next;
+	Player *prev;
+	
+	while(current != NULL)
+	{
+		
+		prev = find_prev_player(root, current);
+		
+		while(prev != NULL && prev->match_runs > current->match_runs)
+		{
+				root = swap_players(root, prev, current);
+				prev = find_prev_player(root, current);
+		}
+		current = next;
+		if(next != NULL) next = next->next;
+	}
+	return root;
+}
 
 
 Player *load_players(char *teams_player_path)
@@ -268,7 +332,13 @@ Player *load_players(char *teams_player_path)
 	{
 		integerNumberIntoString(i, number_string);
 		make_as_path(file_path, teams_player_path, number_string);
+		
+		if(!isExist(file_path)) continue;
+		
 		new_player = load_player(file_path);
+		printf("# in load_players: number_string: %s\n", number_string);
+		strcpy(new_player->folder_nos, number_string);
+		printf("# in load_players: new_player->folder_nos: %s\n", new_player->folder_nos);
 		root = prepend_player(root, new_player);
 	}
 	
@@ -302,6 +372,9 @@ Player * copy_player(Player *player)
 	Player * new_player = create_player( player->name, player->total_played_match, player->total_runs, player->average_runs, NULL);
 	new_player->match_runs = player->match_runs;
 	new_player->out_or_not = player->out_or_not;
+	if(strlen(player->folder_nos)>0)
+		strcpy(new_player->folder_nos, player->folder_nos);
+	
 	return new_player;
 }
 
@@ -346,4 +419,21 @@ Player * player_with_max_runs(Player *root)
 	return maxi;
 }
 	
+Player * reverse_player_list(Player * players)
+{
+	if(players->next == NULL) return players;
 	
+	Player * a = NULL;
+	Player * b = players;
+	Player * c = players->next;
+	
+	while(c != NULL)
+	{
+		b->next = a;
+		a = b;
+		b = c;
+		c = c->next;
+	}
+	b->next = a;
+	return b;
+}
