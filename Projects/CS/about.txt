@@ -1,0 +1,13 @@
+
+                       About CS: (Cricket Scoreboard)
+		
+Cricket Scoreboard an administrtional purposed program, but from the use it is more than that. Because it let us to keep store and manage all the information related a match, teams and players. We can later use or perform some general operations like search which player has maximum runs, average or which team has more wins over another team and many more. But in this program we didn't cover all of the possible features except some common features. Moreover, the way we developed the program, we hope that it will be easy to extend later.
+	
+	
+Program Writers:
+		
+	* Mashiur Rahman
+		
+	* Jahid Hasan Emon
+		
+	* Abdullah Al Mamun
