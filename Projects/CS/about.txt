@@ -7,7 +7,4 @@ Cricket Scoreboard an administrtional purposed program, but from the use it is m
 Program Writers:
 		
 	* Mashiur Rahman
-		
-	* Jahid Hasan Emon
-		
-	* Abdullah Al Mamun
+	
